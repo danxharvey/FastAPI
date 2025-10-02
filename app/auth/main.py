@@ -8,57 +8,25 @@ from passlib.context import CryptContext
 from app.auth.models import Base, User
 from app.auth.schemas import UserCreate, UserOut
 from app.auth.models import User
-from app.auth.utils import create_access_token, decode_access_token
-from app.utils import pwd_context, config
+from app.config import config
+from app.auth.db import init_db, get_db, pwd_context
 from jose import JWTError
+import app.auth.utils as utils
 
 
-# Dependency to get DB session    
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-
-# Check current user (dummy implementation, replace with real auth logic)
-def get_current_user(request: Request):
-    token = request.cookies.get("access_token")
-    if not token:
-        raise HTTPException(status_code=401, detail="Not authenticated")
-
-    try:
-        payload = decode_access_token(token, secret=config["jwt_secret"])
-        username = payload.get("sub")
-        if not username:
-            raise HTTPException(status_code=401, detail="Invalid token")
-        return username
-    except Exception:
-        raise HTTPException(status_code=401, detail="Invalid or expired token")
-    
-
-# Database setup
-SQLALCHEMY_DATABASE_URL = "sqlite:///app/auth/users.db"
-engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
-SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-# Create tables if they don't exist
-Base.metadata.create_all(bind=engine)
+# Initialize DB
+init_db()  # safe to call on every app start
 
 # Define router and endpoints
-router = APIRouter(
-    prefix="/auth/users",
-    tags=["User Management"]
-)
+user_router = APIRouter(prefix="/users", tags=["User Management"])
+auth_router = APIRouter(prefix="/auth", tags=["Authorisation"])
 
     
 # Create user
-@router.post("/", response_model=UserOut, summary="Create user", description="Add a new user to the system.")
-def create_user(user: UserCreate, db: Session = Depends(get_db), current_user: str = Depends(get_current_user)):
+@user_router.post("/create", response_model=UserOut, summary="Create user", description="Add a new user to the system.")
+def create_user(user: UserCreate, db: Session = Depends(get_db), current_user: dict = Depends(utils.require_role("admin"))):
     hashed_pw = pwd_context.hash(user.password)
-    db_user = User(username=user.username, password=hashed_pw)
+    db_user = User(username=user.username, password=hashed_pw, role=user.role)
     db.add(db_user)
     try:
         db.commit()
@@ -70,14 +38,14 @@ def create_user(user: UserCreate, db: Session = Depends(get_db), current_user: s
 
 
 # List all users
-@router.get("/auth/users/", response_model=List[UserOut], summary="List users", description="List all users in database.")
-def read_users(db: Session = Depends(get_db), current_user: str = Depends(get_current_user)):
+@user_router.get("/list", response_model=List[UserOut], summary="List users", description="List all users in database.")
+def read_users(db: Session = Depends(get_db), current_user: dict = Depends(utils.require_role("admin"))):
     return db.query(User).all()
 
 
 # Get single user
-@router.get("/auth/users/{user_id}", response_model=UserOut, summary="Get user", description="Retrieve a single user.")
-def read_user(user_id: int, db: Session = Depends(get_db), current_user: str = Depends(get_current_user)):
+@user_router.get("/view/{user_id}", response_model=UserOut, summary="Get user", description="Retrieve a single user.")
+def read_user(user_id: int, db: Session = Depends(get_db), current_user: dict = Depends(utils.require_role("admin"))):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -85,8 +53,8 @@ def read_user(user_id: int, db: Session = Depends(get_db), current_user: str = D
 
 
 # Update user
-@router.patch("/auth/users/{user_id}", response_model=UserOut, summary="Update user", description="Update a user details.")
-def update_user(user_id: int, user_update: UserCreate, db: Session = Depends(get_db), current_user: str = Depends(get_current_user)):
+@user_router.patch("/patch/{user_id}", response_model=UserOut, summary="Update user", description="Update a user details.")
+def update_user(user_id: int, user_update: UserCreate, db: Session = Depends(get_db), current_user: dict = Depends(utils.require_role("admin"))):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -98,8 +66,8 @@ def update_user(user_id: int, user_update: UserCreate, db: Session = Depends(get
 
 
 # Delete user
-@router.delete("/auth/users/{user_id}", summary="Delete user", description="Delete a user from the system.")
-def delete_user(user_id: int, db: Session = Depends(get_db), current_user: str = Depends(get_current_user)):
+@user_router.delete("/delete/{user_id}", summary="Delete user", description="Delete a user from the system.")
+def delete_user(user_id: int, db: Session = Depends(get_db), current_user: dict = Depends(utils.require_role("admin"))):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -114,13 +82,13 @@ def delete_user(user_id: int, db: Session = Depends(get_db), current_user: str =
 
 
 # User login
-@router.post("auth/login", summary="User login", description="Authenticate user and return JWT token.")
+@auth_router.post("/login", summary="User login", description="Authenticate user and return JWT token.")
 def login(username: str, password: str, request: Request, db: Session = Depends(get_db)):
     # Check for existing JWT cookie
     token = request.cookies.get("access_token")
     if token:
         try:
-            payload = decode_access_token(token, secret=config["jwt_secret"])
+            payload = utils.decode_access_token(token)
             current_user = payload.get("sub")
             if current_user:
                 raise HTTPException(status_code=400, detail=f"Already logged in as {current_user}")
@@ -133,11 +101,7 @@ def login(username: str, password: str, request: Request, db: Session = Depends(
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
     # Generate JWT token
-    token = create_access_token(
-        data={"sub": user.username},
-        secret=config["jwt_secret"],
-        expires_minutes=config["jwt_exp_minutes"]
-    )
+    token = utils.create_access_token(data={"sub": user.username, "role": user.role})
     
     # Create response and set cookie
     response = JSONResponse(content={"msg": f"Logged in as {user.username}"})
@@ -152,8 +116,8 @@ def login(username: str, password: str, request: Request, db: Session = Depends(
 
 
 # User logout
-@router.post("/auth/logout", summary="Logout user", description="Clear JWT cookie to logout")
-def logout(current_user: str = Depends(get_current_user)):
-    response = JSONResponse(content={"msg": f"User {current_user} logged out"})
+@auth_router.post("/logout", summary="Logout user", description="Clear JWT cookie to logout")
+def logout(current_user: str = Depends(utils.get_current_user)):
+    response = JSONResponse(content={"msg": f"User {current_user['username']} logged out"})
     response.delete_cookie(key="access_token")
     return response
