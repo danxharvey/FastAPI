@@ -2,6 +2,7 @@ Putting together an open sourced FastAPI authentication module with the followin
 
 - Basic user authentication database (SQL Alchemy)
 - Login & Logout with session-based cookies
+- Protected endpoints
 - RBAC (user & admin)
 - Defining models and schemas
 - Automated testing with PyTest
