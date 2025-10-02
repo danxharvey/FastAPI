@@ -1,0 +1,47 @@
+endpoints:
+  # User management endpoints
+  - path: /auth/users
+    method: GET
+    description: List all users
+    auth_required: true
+
+  - path: /auth/users
+    method: POST
+    description: Create a new user
+    auth_required: true
+
+  - path: /auth/users/{user_id}
+    method: GET
+    description: Get user by ID
+    auth_required: true
+
+  - path: /auth/users/{user_id}
+    method: PATCH
+    description: Update user by ID
+    auth_required: true
+
+  - path: /auth/users/{user_id}
+    method: DELETE
+    description: Delete user by ID
+    auth_required: true
+
+
+  # Model management endpoints
+  - path: /models/{model_name}/predict
+    method: POST
+    description: Send input and get a dummy prediction
+    auth_required: true
+
+
+  # Metrics endpoint
+  - path: /metrics
+    method: GET
+    description: Retrieve usage metrics
+    auth_required: false
+
+
+  # Health check endpoint
+  - path: /health
+    method: GET
+    description: Check API health and dependencies
+    auth_required: false

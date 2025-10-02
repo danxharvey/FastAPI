@@ -1,0 +1,23 @@
+# Current environment
+current_env: dev
+
+# Configuration for dev environment
+dev:
+  title: Neuron 5 API (Dev)
+  description: Dev environment for Neuron 5 API
+  version: 0.0.1-dev
+  docs_url: /docs
+  redoc_url: /redoc
+  db_url: sqlite:///dev.db
+  jwt_secret: "supersecretkey"
+  jwt_algorithm: "HS256"
+  jwt_exp_minutes: 30
+
+# Configuration for prod environment
+prod:
+  title: Neuron 5 API
+  description: Production API for Neuron 5 API
+  version: 0.0.1
+  docs_url: /docs
+  redoc_url: /redoc
+  db_url: postgresql://user:pass@host:port/dbname

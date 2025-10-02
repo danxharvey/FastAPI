@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Neuron5 API</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+    <!-- Bootstrap CSS CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: #f8fafc;
+        }
+        .hero {
+            background: linear-gradient(90deg, #2563eb 0%, #1e40af 100%);
+            color: #fff;
+            padding: 3rem 1rem 2rem 1rem;
+            border-radius: 0 0 2rem 2rem;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+        .table thead {
+            background: #2563eb;
+            color: #fff;
+        }
+        .footer {
+            margin-top: 3rem;
+            color: #6c757d;
+            text-align: center;
+            font-size: 0.95em;
+        }
+        a {
+            color: #2563eb;
+        }
+        a:hover {
+            color: #1e40af;
+        }
+    </style>
+</head>
+<body>
+    {% if message %}
+    <div class="alert alert-success text-center">{{ message }}</div>
+    {% endif %}
+    <div class="hero">
+        <a href="/login" class="btn btn-primary float-end" style="margin-top: -2.5rem;">Login</a>
+        <h1 class="display-4 fw-bold">Neuron5 API</h1>
+        <p class="lead mb-0">Modern, simple, and powerful API for your projects.</p>
+        <p class="mt-2">Version: {{ api_version }}</p>
+    </div>
+    <div class="container">
+        <h2 class="mb-4">Available Endpoints</h2>
+        <div class="table-responsive">
+            <table class="table table-bordered align-middle">
+                <thead>
+                    <tr>
+                        <th>Path</th>
+                        <th>Method</th>
+                        <th>Description</th>
+                        <th>Auth Required</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for ep in endpoints %}
+                    <tr>
+                        <td><code>{{ ep.path }}</code></td>
+                        <td>{{ ep.method }}</td>
+                        <td>{{ ep.description }}</td>
+                        <td>{{ ep.auth_required }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="mt-4">
+            <a class="btn btn-primary me-2" href="/docs">Swagger UI</a>
+            <a class="btn btn-outline-primary" href="/redoc">ReDoc</a>
+        </div>
+    </div>
+    <div class="footer mt-5">
+        &copy; 2025 Neuron5 API &mdash; <a href="https://neuron5.co.uk" target="_blank">neuron5.co.uk</a>
+    </div>
+    <!-- Bootstrap JS (optional, for interactivity) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
