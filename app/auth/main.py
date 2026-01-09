@@ -6,7 +6,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
 from passlib.context import CryptContext
 from app.auth.models import Base, User
-from app.auth.schemas import UserCreate, UserOut
+from app.auth.schemas import UserCreate, UserOut, LoginRequest
 from app.auth.models import User
 from app.config import config
 from app.auth.db import init_db, get_db, pwd_context
@@ -73,7 +73,7 @@ def delete_user(user_id: int, db: Session = Depends(get_db), current_user: dict 
         raise HTTPException(status_code=404, detail="User not found")
     
     # Optional: prevent users from deleting themselves
-    if current_user == user.username:
+    if current_user["username"] == user.username:
         raise HTTPException(status_code=403, detail="Cannot delete yourself")
     
     db.delete(user)
@@ -83,7 +83,8 @@ def delete_user(user_id: int, db: Session = Depends(get_db), current_user: dict 
 
 # User login
 @auth_router.post("/login", summary="User login", description="Authenticate user and return JWT token.")
-def login(username: str, password: str, request: Request, db: Session = Depends(get_db)):
+# def login(username: str, password: str, request: Request, db: Session = Depends(get_db)):
+def login(login_data: LoginRequest, request: Request, db: Session = Depends(get_db)):
     # Check for existing JWT cookie
     token = request.cookies.get("access_token")
     if token:
@@ -96,8 +97,8 @@ def login(username: str, password: str, request: Request, db: Session = Depends(
             # Token invalid/expired → ignore, continue login
             pass
 
-    user = db.query(User).filter(User.username == username).first()
-    if not user or not pwd_context.verify(password, user.password):
+    user = db.query(User).filter(User.username == login_data.username).first()
+    if not user or not pwd_context.verify(login_data.password, user.password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
     # Generate JWT token
@@ -117,7 +118,7 @@ def login(username: str, password: str, request: Request, db: Session = Depends(
 
 # User logout
 @auth_router.post("/logout", summary="Logout user", description="Clear JWT cookie to logout")
-def logout(current_user: str = Depends(utils.get_current_user)):
+def logout(current_user: dict = Depends(utils.get_current_user)):
     response = JSONResponse(content={"msg": f"User {current_user['username']} logged out"})
     response.delete_cookie(key="access_token")
     return response

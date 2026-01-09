@@ -7,7 +7,7 @@ from app.config import config
 # Create JWT token
 def create_access_token(data: dict):
     to_encode = data.copy()
-    expire = datetime.utcnow() + timedelta(minutes=config["jwt_exp_minutes"])
+    expire = datetime.now(timezone.utc) + timedelta(minutes=config["jwt_exp_minutes"])
     to_encode.update({"exp": expire})
     token = jwt.encode(to_encode, config["jwt_secret"], algorithm=config["jwt_algorithm"])
     return token
