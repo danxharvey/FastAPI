@@ -8,10 +8,17 @@ dev:
   version: 0.0.1-dev
   docs_url: /docs
   redoc_url: /redoc
-  db_url: sqlite:///dev.db
+  db_url: sqlite:///app/auth/users.db
+  test_db_url: sqlite:///app/tests/test_users.db
   jwt_secret: "supersecretkey"
   jwt_algorithm: "HS256"
   jwt_exp_minutes: 30
+  # Default admin credentials for new db
+  default_admin:
+    username: "admin"
+    password: "admin"
+    role: "admin"
+
 
 # Configuration for prod environment
 prod:

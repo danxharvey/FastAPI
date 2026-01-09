@@ -1,19 +1,14 @@
 # Import libraries
-from fastapi import FastAPI, Form, Depends, HTTPException, Request
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from fastapi import FastAPI, Form, Depends, Request
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from passlib.context import CryptContext
-from sqlalchemy.orm import Session
-from app.auth.main import router as user_endpoints
+from app.auth.main import user_router, auth_router
+from app.config import config
 import yaml
 import os
 
-# Load config.yaml
-config_path = os.path.join(os.path.dirname(__file__), "config.yaml")
-with open(config_path) as f:
-    full_config = yaml.safe_load(f)
-    config = full_config[full_config.get("current_env")]
 
 # Load endpoints YAML
 ep_path = os.path.join(os.path.dirname(__file__), "endpoints.yaml")
@@ -32,9 +27,8 @@ app.mount("/static", StaticFiles(directory="app/static"), name="static")
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
-
 # Homepage route with login/logout message support
-@app.get("/", response_class=HTMLResponse)
+@app.get("/", response_class=HTMLResponse, description="View homepage summary of API.")
 def homepage(request: Request, msg: str = None):
     return templates.TemplateResponse(
         "index.html",
@@ -47,11 +41,14 @@ def homepage(request: Request, msg: str = None):
         }
     )
 
+# Register the authorisation router
+app.include_router(auth_router)
+
 # Register the users router
-app.include_router(user_endpoints)
+app.include_router(user_router)
 
 # Health check route
-@app.get("/health", response_class=JSONResponse)
+@app.get("/health", response_class=JSONResponse, summary="Health check", description="Check health of API service.")
 def health_check():
     # Check if template directory exists as a simple health indicator
     templates_dir = os.path.join(os.path.dirname(__file__), "templates")
