@@ -55,9 +55,15 @@ def main():
 
     # 4. Run tests + coverage
     all_passed &= run_cmd(
-        "python -m pytest --maxfail=1 --disable-warnings \
-        --cov-report=term --ignore=.venv",
+        "python -m pytest --maxfail=1 --disable-warnings --cov=. \
+        --cov-report=term-missing --ignore=.venv",
         "pytest + coverage",
+    )
+
+    # 5. Cleanup artifacts
+    all_passed &= run_cmd(
+        "rm -f .coverage",
+        "Cleanup coverage artifacts",
     )
 
     if all_passed:

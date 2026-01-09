@@ -28,3 +28,7 @@ __pypackages__/
 
 # Environment variables
 .env
+
+# Ignore artifacts of pytest
+.coverage
+htmlcov/
