@@ -25,6 +25,7 @@
     - Identify all dependent modules, functions, and consumers.
 - Apply the Read-Write-Reread protocol:
     - Reread every modified file after changes to ensure nothing is broken.
+    - Beware of flake8, isort, mypy and black checks for code quality.
 - When moving or refactoring code:
     - Update all references across the project.
     - Ensure dependencies are intact and no module relies on unstated assumptions.
