@@ -49,21 +49,22 @@ class TestLoginEndpoint:
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
         assert "Invalid credentials" in response.json()["detail"]
         assert "access_token" not in response.cookies
-    
-    def test_login_already_logged_in(self, client, test_user):
-        """Test login when user is already logged in."""
-        # First login
-        token = create_access_token(data={"sub": "testuser", "role": "user"})
         
-        # Try to login again with cookie set
-        client.cookies.set("access_token", token)
+    def test_login_with_invalid_token_allows_login(self, client, test_user):
+        """Test that login with invalid/expired token allows new login to proceed."""
+        # Set an invalid token in cookie
+        client.cookies.set("access_token", "invalid.token.here")
+        
+        # Should be able to login despite invalid token
         response = client.post(
             "/auth/login",
             json={"username": "testuser", "password": "testpassword"}
         )
         
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert "Already logged in" in response.json()["detail"]
+        # Should succeed - invalid token should be ignored
+        assert response.status_code == status.HTTP_200_OK
+        assert "Logged in as testuser" in response.json()["msg"]
+        assert "access_token" in response.cookies
     
     def test_login_with_admin_user(self, client, test_admin):
         """Test login with admin user."""
@@ -404,3 +405,4 @@ class TestDeleteUserEndpoint:
         )
         
         assert response.status_code == status.HTTP_403_FORBIDDEN
+

@@ -93,7 +93,7 @@ def login(login_data: LoginRequest, request: Request, db: Session = Depends(get_
             current_user = payload.get("sub")
             if current_user:
                 raise HTTPException(status_code=400, detail=f"Already logged in as {current_user}")
-        except JWTError:
+        except (JWTError, HTTPException):
             # Token invalid/expired → ignore, continue login
             pass
 
