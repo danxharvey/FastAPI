@@ -1,6 +1,8 @@
 from datetime import datetime, timedelta, timezone
-from fastapi import HTTPException, Request, Depends
-from jose import jwt, JWTError
+
+from fastapi import Depends, HTTPException, Request
+from jose import JWTError, jwt
+
 from app.config import config
 
 
@@ -9,14 +11,18 @@ def create_access_token(data: dict):
     to_encode = data.copy()
     expire = datetime.now(timezone.utc) + timedelta(minutes=config["jwt_exp_minutes"])
     to_encode.update({"exp": expire})
-    token = jwt.encode(to_encode, config["jwt_secret"], algorithm=config["jwt_algorithm"])
+    token = jwt.encode(
+        to_encode, config["jwt_secret"], algorithm=config["jwt_algorithm"]
+    )
     return token
 
 
 # Decode JWT token
 def decode_access_token(token: str):
     try:
-        payload = jwt.decode(token, config["jwt_secret"], algorithms=[config["jwt_algorithm"]])
+        payload = jwt.decode(
+            token, config["jwt_secret"], algorithms=[config["jwt_algorithm"]]
+        )
         return payload
     except JWTError:
         raise HTTPException(status_code=401, detail="Invalid or expired token")
@@ -40,6 +46,9 @@ def get_current_user(request: Request):
 def require_role(required_role: str):
     def role_checker(current_user=Depends(get_current_user)):
         if current_user["role"] != required_role:
-            raise HTTPException(status_code=403, detail=f"Requires {required_role} role")
+            raise HTTPException(
+                status_code=403, detail=f"Requires {required_role} role"
+            )
         return current_user
+
     return role_checker

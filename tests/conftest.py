@@ -1,19 +1,19 @@
 # Import libraries
-import pytest
 import os
-import tempfile
+from unittest.mock import Mock
+
+import pytest
+from fastapi import Request
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from fastapi import Request
-from unittest.mock import Mock
 
 # Import app components
-from app.auth.models import Base, User
 from app.auth.db import get_db, pwd_context
 from app.auth.enums import UserRole
-from app.main import app
+from app.auth.models import Base, User
 from app.config import config
+from app.main import app
 
 
 # Create test database in memory
@@ -22,7 +22,7 @@ def test_db():
     """Create a fresh test database for each test."""
     # Use test DB URL from config
     test_db_url = config.get("test_db_url", "sqlite:///:memory:")
-    
+
     # If using file-based DB, ensure directory exists
     if test_db_url.startswith("sqlite:///"):
         db_path = test_db_url.replace("sqlite:///", "")
@@ -31,11 +31,11 @@ def test_db():
             # Remove existing test DB if it exists
             if os.path.exists(db_path):
                 os.remove(db_path)
-    
+
     engine = create_engine(test_db_url, connect_args={"check_same_thread": False})
     Base.metadata.create_all(bind=engine)
     SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
-    
+
     db = SessionLocal()
     try:
         yield db
@@ -54,12 +54,13 @@ def test_db():
 @pytest.fixture(scope="function")
 def override_get_db(test_db):
     """Override the get_db dependency with test database."""
+
     def _get_db():
         try:
             yield test_db
         finally:
             pass  # Don't close, test_db fixture handles it
-    
+
     app.dependency_overrides[get_db] = _get_db
     yield test_db
     app.dependency_overrides.clear()
@@ -79,7 +80,7 @@ def test_user(test_db):
     user = User(
         username="testuser",
         password=pwd_context.hash("testpassword"),
-        role=UserRole.user
+        role=UserRole.user,
     )
     test_db.add(user)
     test_db.commit()
@@ -94,7 +95,7 @@ def test_admin(test_db):
     admin = User(
         username="testadmin",
         password=pwd_context.hash("adminpassword"),
-        role=UserRole.admin
+        role=UserRole.admin,
     )
     test_db.add(admin)
     test_db.commit()
@@ -115,4 +116,5 @@ def mock_request():
 def create_test_token(username: str, role: str = "user"):
     """Helper to create a test JWT token."""
     from app.auth.utils import create_access_token
+
     return create_access_token(data={"sub": username, "role": role})

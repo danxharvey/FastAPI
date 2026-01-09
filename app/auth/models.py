@@ -1,15 +1,24 @@
 # Import libraries
-from sqlalchemy import Column, Integer, String, Enum as SqlEnum
-from sqlalchemy.orm import declarative_base
+from sqlalchemy import Enum as SqlEnum
+from sqlalchemy import Integer, String
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+
 from app.auth.enums import UserRole
 
-# Define the SQLAlchemy User model
-Base = declarative_base()
 
-# Define the User model
+# Create your project Base
+class Base(DeclarativeBase):
+    pass
+
+
+# Define models
 class User(Base):
     __tablename__ = "users"
-    id = Column(Integer, primary_key=True, index=True)
-    username = Column(String, unique=True, index=True, nullable=False)
-    password = Column(String, nullable=False)
-    role = Column(SqlEnum(UserRole), default=UserRole.user, nullable=False)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    username: Mapped[str] = mapped_column(
+        String, unique=True, index=True, nullable=False
+    )
+    password: Mapped[str] = mapped_column(String, nullable=False)
+    role: Mapped[UserRole] = mapped_column(
+        SqlEnum(UserRole), default=UserRole.user, nullable=False
+    )

@@ -1,14 +1,15 @@
 # Import libraries
-from fastapi import FastAPI, Form, Depends, Request
+import os
+
+import yaml
+from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from passlib.context import CryptContext
-from app.auth.main import user_router, auth_router
-from app.config import config
-import yaml
-import os
 
+from app.auth.endpoints import auth_router, user_router
+from app.config import config
 
 # Load endpoints YAML
 ep_path = os.path.join(os.path.dirname(__file__), "endpoints.yaml")
@@ -21,7 +22,8 @@ app = FastAPI(
     description=config["description"],
     version=config["version"],
     docs_url=config["docs_url"],
-    redoc_url=config["redoc_url"])
+    redoc_url=config["redoc_url"],
+)
 templates = Jinja2Templates(directory="app/templates")
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -29,7 +31,7 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # Homepage route with login/logout message support
 @app.get("/", response_class=HTMLResponse, description="View homepage summary of API.")
-def homepage(request: Request, msg: str = None):
+def homepage(request: Request, msg: str = ""):
     return templates.TemplateResponse(
         "index.html",
         {
@@ -37,9 +39,10 @@ def homepage(request: Request, msg: str = None):
             "api_title": app.title,
             "api_description": app.description,
             "api_version": app.version,
-            "endpoints": ep_config
-        }
+            "endpoints": ep_config,
+        },
     )
+
 
 # Register the authorisation router
 app.include_router(auth_router)
@@ -47,8 +50,14 @@ app.include_router(auth_router)
 # Register the users router
 app.include_router(user_router)
 
+
 # Health check route
-@app.get("/health", response_class=JSONResponse, summary="Health check", description="Check health of API service.")
+@app.get(
+    "/health",
+    response_class=JSONResponse,
+    summary="Health check",
+    description="Check health of API service.",
+)
 def health_check():
     # Check if template directory exists as a simple health indicator
     templates_dir = os.path.join(os.path.dirname(__file__), "templates")
@@ -57,5 +66,5 @@ def health_check():
         "status": "ok" if templates_ok else "error",
         "app": config["title"],
         "version": config["version"],
-        "templates_dir": "ok" if templates_ok else "missing"
+        "templates_dir": "ok" if templates_ok else "missing",
     }
