@@ -1,5 +1,6 @@
 # Import libraries
 import os
+
 import yaml
 
 # Load config.yaml for multiple use

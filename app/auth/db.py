@@ -1,14 +1,16 @@
 # Import libraries
+from passlib.context import CryptContext
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from passlib.context import CryptContext
+
 from app.auth.models import Base, User
 from app.config import config
 
-
 # Configure database
 SQLALCHEMY_DATABASE_URL = config["db_url"]
-engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
+)
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -27,7 +29,7 @@ def init_db():
             username = config["default_admin"]["username"]
             password = config["default_admin"]["password"]
             role = config["default_admin"]["role"]
-            
+
             hashed_pw = pwd_context.hash(password)
             admin_user = User(username=username, password=hashed_pw, role=role)
             db.add(admin_user)
